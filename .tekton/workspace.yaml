@@ -1,0 +1,30 @@
+# Shared Tekton workspace volume for serverless-martedi (dev).
+#
+# This file contains the tenant-scoped persistent volume claim needed by the
+# Tekton pipeline tasks. It can be safely applied by developers or the Copilot
+# under tenant impersonation (e.g. user:default/jane-doe):
+#
+#   kubectl apply -f .tekton/workspace.yaml
+#   kubectl apply -f .tekton/sam-tasks.yaml
+#   kubectl apply -f .tekton/pipeline.yaml
+#
+# Platform prerequisites (Namespace, ServiceAccount/tekton-pipeline with IRSA,
+# and deployment RBAC) are pre-provisioned by platform administrators (see
+# .tekton/admin-prerequisites.yaml or bootstrap/ in the platform repository).
+#
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: serverless-martedi-dev-workspace
+  namespace: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 2Gi

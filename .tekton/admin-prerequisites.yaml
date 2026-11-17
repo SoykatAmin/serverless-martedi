@@ -1,0 +1,128 @@
+# Platform Administrator Prerequisites for serverless-martedi (dev).
+#
+# These objects are cluster/namespace administrative prerequisites and should be
+# applied once by a platform administrator (e.g. via GitOps or bootstrap scripts):
+#
+#   kubectl apply -f .tekton/admin-prerequisites.yaml
+#
+# Tenant users (and the Copilot acting under user impersonation) do not have
+# permissions to create ServiceAccounts or RoleBindings to prevent privilege
+# escalation (attaching arbitrary IAM roles).
+#
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+    environment: dev
+  annotations:
+    company.io/owner-group: "group:default/team-alpha"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-pipeline
+  namespace: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::523753954008:role/tekton-pipeline-provisioner
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-sa
+  namespace: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tekton-pipeline-deploy
+  namespace: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+rules:
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - endpoints
+      - events
+      - persistentvolumeclaims
+      - pods
+      - pods/log
+      - serviceaccounts
+      - services
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps", "services"]
+    verbs: ["create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-pipeline-deploy
+  namespace: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+subjects:
+  - kind: ServiceAccount
+    name: tekton-pipeline
+    namespace: bs-team-alpha-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tekton-pipeline-deploy
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-triggers-eventlistener
+  namespace: bs-team-alpha-dev
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: bs-team-alpha-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: serverless-martedi-dev-tekton-triggers-interceptors
+  labels:
+    app.kubernetes.io/part-of: serverless-martedi
+    app.kubernetes.io/managed-by: backstage-scaffolder
+    owner: so.amin
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: bs-team-alpha-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-interceptor-reader

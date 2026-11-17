@@ -1,0 +1,14 @@
+{
+  "name": "serverless-martedi",
+  "version": "1.0.0",
+  "description": "a serverless app",
+  "type": "module",
+  "main": "app.mjs",
+  "scripts": {
+    "test": "node --test tests/unit/*.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.690.0",
+    "@aws-sdk/util-dynamodb": "^3.690.0"
+  }
+}
